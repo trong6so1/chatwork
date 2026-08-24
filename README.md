@@ -118,7 +118,13 @@ GEMINI_MODEL=gemini-1.5-flash
 - `PORT`: Cổng chạy server ở local (mặc định 3000, **không bắt buộc** đổi).
 - `CHATWORK_API_TOKEN`: Lấy từ mục API Setting của tài khoản Bot trên Chatwork (**Bắt buộc**).
 - `CHATWORK_BOT_ACCOUNT_ID`: Dãy số ID tài khoản của Bot (ví dụ: `1234567`). Lấy bằng cách xem Profile của Bot (**Bắt buộc**).
-- `CHATWORK_WEBHOOK_TOKEN`: Token dùng để ký mã xác thực Webhook. Sinh ra khi bạn tạo Webhook trên Chatwork (**Bắt buộc**).
+- `CHATWORK_WEBHOOK_TOKEN`: Token dùng để ký mã xác thực Webhook. Sinh ra khi bạn tạo Webhook trên Chatwork (**Bắt buộc**). Hệ thống sẽ đọc token này thông qua biến môi trường `process.env.CHATWORK_WEBHOOK_TOKEN` (sử dụng thư viện `dotenv` trong file `src/config/env.ts`) để xác thực chữ ký (Signature) các request từ Chatwork.
+  - **Cách lấy Webhook Token:**
+    1. Đăng nhập Chatwork, nhấn vào tên tài khoản ở góc trên bên phải -> Chọn **API Setting**.
+    2. Mở tab **Webhook** -> Nhấn **Create new Webhook**.
+    3. Điền tên Webhook và **Webhook URL** (URL ngrok hoặc domain thật của bạn).
+    4. Tại mục Event, đánh dấu chọn **Room Event** -> **Message created**.
+    5. Nhấn **Create**. Màn hình sẽ hiển thị chuỗi **Webhook Token**, hãy copy và điền vào biến này (Xem thêm chi tiết tại **Phần 8**).
 - `GEMINI_API_KEY`: API Key lấy từ trang [Google AI Studio](https://aistudio.google.com/) (**Bắt buộc**).
 - `GEMINI_MODEL`: Model Gemini sử dụng (mặc định là `gemini-1.5-flash`, **không bắt buộc** đổi).
 
