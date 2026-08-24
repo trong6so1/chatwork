@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Mood Music Suggester",
+  "version": "1.0",
+  "description": "Gợi ý nhạc YouTube theo tâm trạng và thể loại.",
+  "permissions": ["tabs", "scripting"],
+  "host_permissions": ["*://*.youtube.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

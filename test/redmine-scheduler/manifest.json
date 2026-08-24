@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Redmine Scheduler",
+  "version": "1.0",
+  "description": "Tự động mở Redmine theo lịch hẹn.",
+  "permissions": ["alarms", "storage", "tabs", "notifications"],
+  "host_permissions": ["https://redmine.thk-hd.vn/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://redmine.thk-hd.vn/projects/mens-est/time_entries*"],
+      "js": ["content.js"]
+    }
+  ]
+}

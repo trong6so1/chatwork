@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriTrack Pro - Hệ thống Quản lý & Theo dõi Dinh dưỡng</title>
+    <!-- CSS Tùy chỉnh phong cách Glassmorphism -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- HEADER TRUNG TÂM -->
+        <header>
+            <div class="logo-section">
+                <h1>🥗 NutriTrack Pro</h1>
+                <p>Hệ thống quản lý dinh dưỡng & tối ưu giảm cân</p>
+            </div>
+            
+            <div class="header-summary">
+                <div class="summary-bubble">
+                    <span class="label">Đã nạp</span>
+                    <span class="value" id="hdr-consumed">0 kcal</span>
+                </div>
+                <div class="summary-bubble">
+                    <span class="label">Mục tiêu</span>
+                    <span class="value" id="hdr-goal">0 kcal</span>
+                </div>
+                <div class="summary-bubble remaining">
+                    <span class="label">Còn lại</span>
+                    <span class="value" id="hdr-remaining">0 kcal</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- THANH CHUYỂN TAB CHỨC NĂNG -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="dashboard">
+                <span>📅</span> Nhật ký ăn uống
+            </button>
+            <button class="nav-tab" data-tab="inbody">
+                <span>⚖️</span> Chỉ số InBody
+            </button>
+            <button class="nav-tab" data-tab="recommendation">
+                <span>⚡</span> Đề xuất tuần mới
+            </button>
+            <button class="nav-tab" data-tab="reports">
+                <span>✉️</span> Báo cáo & LINE
+            </button>
+            <button class="nav-tab" data-tab="settings">
+                <span>⚙️</span> Cấu hình cá nhân
+            </button>
+        </nav>
+
+        <!-- BỘ CHỌN NGÀY DÙNG CHUNG -->
+        <div class="date-selector-row">
+            <button class="date-nav-btn" id="prev-day-btn">◀</button>
+            <div class="current-date-display">
+                <span>📅 Ngày theo dõi:</span>
+                <input type="date" id="selected-date-picker">
+            </div>
+            <button class="date-nav-btn" id="next-day-btn">▶</button>
+        </div>
+
+        <!-- ================= TAB 1: NHẬT KÝ ĂN UỐNG ================= -->
+        <div class="tab-panel active" id="dashboard">
+            
+            <!-- THÔNG BÁO NHẮC NHỞ CHỦ NHẬT (INBODY) -->
+            <div class="sunday-reminder-box" id="sunday-reminder" style="display: none;">
+                <div class="reminder-content">
+                    <span class="reminder-icon">🚨</span>
+                    <div class="reminder-text">
+                        <h4>Hôm nay là Chủ Nhật!</h4>
+                        <p>Đã đến lịch cập nhật chỉ số InBody mới nhất để phân tích tiến độ giảm cân trong tuần.</p>
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="goToInBodyTab()">Cập nhật ngay ⚖️</button>
+            </div>
+
+            <div class="grid-2col">
+                <!-- Cột trái: Vòng tròn calories & Ghi nhận nhanh -->
+                <div>
+                    <!-- Vòng tròn tiến độ -->
+                    <div class="card" style="text-align: center;">
+                        <h3 class="card-title">📉 Tổng quan Calories</h3>
+                        
+                        <div class="calorie-ring-container">
+                            <!-- SVG Vòng tròn Calo -->
+                            <svg width="180" height="180" viewBox="0 0 120 120">
+                                <circle class="svg-ring-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="svg-ring-progress" id="progress-circle" cx="60" cy="60" r="50"></circle>
+                            </svg>
+                            <div class="calorie-ring-info">
+                                <span class="ring-val" id="ring-percentage">0%</span>
+                                <span class="ring-lbl" id="ring-consumed-display">0/0 kcal</span>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-summary-row">
+                            <div class="calorie-status-box">
+                                <span class="label">Mục tiêu</span>
+                                <div class="value" id="stat-goal">0</div>
+                            </div>
+                            <div class="calorie-status-box">
+                                <span class="label">Đã nạp</span>
+                                <div class="value" style="color: var(--accent-amber);" id="stat-consumed">0</div>
+                            </div>
+                            <div class="calorie-status-box">
+                                <span class="label" style="font-size: 0.7rem;">Chênh lệch</span>
+                                <div class="value" id="stat-remaining">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ghi nhận món ăn -->
+                    <div class="card">
+                        <h3 class="card-title">📝 Ghi nhận món ăn nhanh</h3>
+                        
+                        <form id="add-food-form">
+                            <div class="form-group search-container">
+                                <label for="food-name-input">Tên thực phẩm / Món ăn</label>
+                                <input type="text" id="food-name-input" class="input-control" placeholder="Nhập phở bò, ức gà, khoai lang..." required autocomplete="off">
+                                <div class="suggestions-dropdown" id="search-suggestions" style="display: none;"></div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="food-cal-input">Lượng Calories (kcal)</label>
+                                    <input type="number" id="food-cal-input" class="input-control" placeholder="Kcal" required min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="food-portion-input">Khẩu phần / Khối lượng</label>
+                                    <input type="text" id="food-portion-input" class="input-control" placeholder="Ví dụ: 1 tô, 200g, 1 quả">
+                                </div>
+                                <div class="form-group">
+                                    <label for="food-meal-select">Bữa ăn</label>
+                                    <select id="food-meal-select" class="input-control">
+                                        <option value="breakfast">Bữa Sáng</option>
+                                        <option value="lunch">Bữa Trưa</option>
+                                        <option value="dinner">Bữa Tối</option>
+                                        <option value="snack">Ăn Vặt / Khác</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                                ➕ Thêm vào thực đơn trong ngày
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Nhật ký chi tiết từng bữa ăn -->
+                <div>
+                    <div class="card">
+                        <h3 class="card-title">🍲 Thực đơn bữa ăn chi tiết</h3>
+                        
+                        <div class="meals-container">
+                            <!-- Bữa sáng -->
+                            <div class="meal-block" id="meal-breakfast-block">
+                                <div class="meal-header">
+                                    <span>🍳 Bữa Sáng</span>
+                                    <span class="calories">0 kcal</span>
+                                </div>
+                                <div class="food-list"></div>
+                            </div>
+
+                            <!-- Bữa trưa -->
+                            <div class="meal-block" id="meal-lunch-block">
+                                <div class="meal-header">
+                                    <span>🍱 Bữa Trưa</span>
+                                    <span class="calories">0 kcal</span>
+                                </div>
+                                <div class="food-list"></div>
+                            </div>
+
+                            <!-- Bữa tối -->
+                            <div class="meal-block" id="meal-dinner-block">
+                                <div class="meal-header">
+                                    <span>🍲 Bữa Tối</span>
+                                    <span class="calories">0 kcal</span>
+                                </div>
+                                <div class="food-list"></div>
+                            </div>
+
+                            <!-- Bữa phụ -->
+                            <div class="meal-block" id="meal-snack-block">
+                                <div class="meal-header">
+                                    <span>🍎 Ăn Vặt / Phụ</span>
+                                    <span class="calories">0 kcal</span>
+                                </div>
+                                <div class="food-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 2: CHỈ SỐ CƠ THỂ INBODY ================= -->
+        <div class="tab-panel" id="inbody">
+            <div class="grid-1-2">
+                <!-- Khối nhập InBody mới -->
+                <div class="card">
+                    <h3 class="card-title">📏 Cập nhật InBody mới</h3>
+
+                    <!-- ===== KHU VỰC UPLOAD ẢNH PHIẾU INBODY ===== -->
+                    <div class="inbody-upload-section">
+                        <label class="upload-zone" id="inbody-upload-zone" for="inbody-image-input">
+                            <div class="upload-icon">📷</div>
+                            <div class="upload-title">Tải ảnh phiếu InBody lên</div>
+                            <div class="upload-subtitle">Kéo thả hoặc nhấp để chọn ảnh (.jpg, .png, .webp)</div>
+                            <input type="file" id="inbody-image-input" accept="image/*" style="display:none;">
+                        </label>
+
+                        <!-- Preview ảnh đã chọn -->
+                        <div class="inbody-image-preview-wrap" id="inbody-image-preview-wrap" style="display:none;">
+                            <img id="inbody-image-preview" src="" alt="Ảnh phiếu InBody" class="inbody-image-preview">
+                            <button class="remove-image-btn" id="remove-image-btn" title="Xóa ảnh">✕</button>
+                        </div>
+
+                        <!-- Nút phân tích ảnh -->
+                        <button class="btn btn-primary" id="analyze-inbody-btn" style="width:100%; margin-top: 0.75rem; display:none;">
+                            <span id="analyze-btn-text">🔍 Phân tích ảnh InBody bằng AI</span>
+                        </button>
+
+                        <!-- Panel kết quả phân tích -->
+                        <div class="analysis-result-panel" id="analysis-result-panel" style="display:none;">
+                            <div class="analysis-result-header">
+                                <span class="analysis-icon">🤖</span>
+                                <span>Kết quả phân tích AI từ ảnh InBody</span>
+                            </div>
+                            <div class="analysis-result-body" id="analysis-result-body"></div>
+                            <button class="btn btn-success" id="apply-analysis-btn" style="width:100%; margin-top:0.75rem;">
+                                ✅ Áp dụng kết quả vào form
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="upload-divider">
+                        <span>hoặc nhập thủ công</span>
+                    </div>
+
+                    <form id="inbody-form">
+                        <div class="form-group">
+                            <label for="inbody-date-input">Ngày đo chỉ số</label>
+                            <input type="date" id="inbody-date-input" class="input-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="inbody-weight-input">Cân nặng hiện tại (kg)</label>
+                            <input type="number" step="0.1" id="inbody-weight-input" class="input-control" placeholder="Ví dụ: 70.5" required min="30">
+                        </div>
+                        <div class="form-group">
+                            <label for="inbody-fat-input">Tỷ lệ mỡ cơ thể (%)</label>
+                            <input type="number" step="0.1" id="inbody-fat-input" class="input-control" placeholder="Ví dụ: 21.5" required min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="inbody-muscle-input">Khối lượng cơ xương (kg)</label>
+                            <input type="number" step="0.1" id="inbody-muscle-input" class="input-control" placeholder="Ví dụ: 32.0" required min="10">
+                        </div>
+
+                        <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1rem;">
+                            💾 Lưu chỉ số InBody
+                        </button>
+                    </form>
+
+                    <button class="btn btn-primary" id="generate-plan-btn" style="width: 100%; margin-top: 1rem;">
+                        ⚡ Tự động đề xuất kế hoạch tuần tới
+                    </button>
+                </div>
+
+                <!-- Đồ thị xu hướng biến đổi chỉ số -->
+                <div class="card">
+                    <h3 class="card-title">📈 Xu hướng thay đổi cân nặng & mỡ</h3>
+                    
+                    <div class="inbody-stats-summary">
+                        <div class="calorie-status-box">
+                            <span class="label">Cân nặng hiện tại</span>
+                            <div class="value" id="latest-weight">-- kg</div>
+                        </div>
+                        <div class="calorie-status-box">
+                            <span class="label">Tỷ lệ mỡ cơ thể</span>
+                            <div class="value" style="color: var(--accent-rose);" id="latest-fat">-- %</div>
+                        </div>
+                        <div class="calorie-status-box">
+                            <span class="label">Khối lượng cơ</span>
+                            <div class="value" style="color: var(--accent-emerald);" id="latest-muscle">-- kg</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-wrapper">
+                            <canvas id="inbody-trend-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bảng lưu lịch sử chi tiết -->
+            <div class="card">
+                <h3 class="card-title">🕒 Lịch sử dữ liệu InBody đã ghi nhận</h3>
+                <div class="inbody-table-container">
+                    <table class="data-table" id="inbody-table">
+                        <thead>
+                            <tr>
+                                <th>Ngày đo chỉ số</th>
+                                <th>Cân nặng (kg)</th>
+                                <th>Tỷ lệ mỡ (%)</th>
+                                <th>Cơ xương (kg)</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dữ liệu render từ JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 3: ĐỀ XUẤT TUẦN MỚI ================= -->
+        <div class="tab-panel" id="recommendation">
+            <div class="card">
+                <h3 class="card-title">🎯 Kế hoạch phân bổ dinh dưỡng & calo thích ứng</h3>
+                
+                <div id="weekly-plan-container">
+                    <!-- Dữ liệu render tự động từ JS dựa trên phân tích chỉ số InBody -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 4: BÁO CÁO & THÔNG BÁO LINE ================= -->
+        <div class="tab-panel" id="reports">
+            <div class="line-section-layout">
+                <!-- Thao tác xuất Excel & Cấu hình LINE -->
+                <div>
+                    <!-- Xuất báo cáo Excel -->
+                    <div class="card">
+                        <h3 class="card-title">📊 Xuất dữ liệu báo cáo dinh dưỡng</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                            Tải file Excel báo cáo chi tiết thực đơn ăn uống và thống kê calories của ngày hiện tại để lưu trữ cá nhân hoặc gửi cho huấn luyện viên (PT).
+                        </p>
+                        <button class="btn btn-success" id="export-excel-btn" style="width: 100%;">
+                            📥 Tải báo cáo Excel ngày hiện tại (.csv)
+                        </button>
+                    </div>
+
+                    <!-- Tích hợp LINE Notify thật -->
+                    <div class="card">
+                        <h3 class="card-title">🔔 Liên kết ứng dụng LINE Notify</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.25rem;">
+                            Ứng dụng hỗ trợ đẩy báo cáo tự động trực tiếp đến tài khoản LINE Notify trên điện thoại của bạn vào cuối ngày.
+                        </p>
+                        
+                        <div class="form-group">
+                            <label for="line-token-input">LINE Notify Access Token</label>
+                            <input type="password" id="line-token-input" class="input-control" placeholder="Dán Token LINE Notify của bạn tại đây...">
+                        </div>
+                        
+                        <button class="btn btn-primary" id="save-line-token" style="width: 100%; margin-bottom: 0.75rem;">
+                            💾 Lưu token liên kết
+                        </button>
+                        
+                        <button class="btn btn-secondary" id="send-line-btn" style="width: 100%;">
+                            🚀 Gửi thông báo & file báo cáo qua LINE
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Smartphone Mockup để giả lập LINE -->
+                <div>
+                    <div class="card" style="display: flex; flex-direction: column; align-items: center;">
+                        <h3 class="card-title" style="width: 100%;">📱 Mô phỏng kênh thông báo LINE</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; text-align: center;">
+                            Dưới đây là khung chat LINE thực tế ảo. Bấm "Gửi thông báo qua LINE" ở bên trái hoặc tương tác trực tiếp với LINE Bot giả lập.
+                        </p>
+                        
+                        <!-- Thiết bị di động mô phỏng -->
+                        <div class="smartphone-mockup">
+                            <div class="smartphone-header">
+                                <span class="time">14:15</span>
+                                <span class="operator">NutriBot</span>
+                                <div class="signal-icons">📶 🔋 100%</div>
+                            </div>
+                            
+                            <!-- Hộp tin nhắn LINE -->
+                            <div class="line-chat-area" id="line-chat-box">
+                                <div class="line-system-date">Hôm nay</div>
+                                
+                                <div class="line-message">
+                                    <div class="line-avatar">Nutri</div>
+                                    <div class="line-bubble-wrapper">
+                                        <span class="line-sender-name">Trợ lý Dinh dưỡng</span>
+                                        <div class="line-bubble">Xin chào! Tôi là Trợ lý Dinh dưỡng giảm cân của bạn. Cuối mỗi ngày, tôi sẽ gửi báo cáo calories cùng tệp Excel chi tiết món ăn về đây giúp bạn theo dõi dễ dàng. 🍀</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="smartphone-footer">
+                                <input type="text" class="smartphone-input" placeholder="Gõ 'calo', 'inbody' hoặc 'đề xuất'...">
+                                <button class="smartphone-send-btn">➤</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 5: CÀI ĐẶT CÁ NHÂN ================= -->
+        <div class="tab-panel" id="settings">
+            <div class="card" style="max-width: 600px; margin: 0 auto;">
+                <h3 class="card-title">⚙️ Cấu hình thông số thể hình & mục tiêu</h3>
+                
+                <form id="settings-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="set-gender">Giới tính sinh học</label>
+                            <select id="set-gender" class="input-control">
+                                <option value="male">Nam giới</option>
+                                <option value="female">Nữ giới</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="set-age">Tuổi của bạn</label>
+                            <input type="number" id="set-age" class="input-control" required min="10" max="100">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="set-height">Chiều cao cơ thể (cm)</label>
+                            <input type="number" id="set-height" class="input-control" required min="100" max="250">
+                        </div>
+                        <div class="form-group">
+                            <label for="set-weight">Cân nặng ban đầu (kg)</label>
+                            <input type="number" step="0.1" id="set-weight" class="input-control" required min="30" max="200">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="set-activity">Mức độ vận động / Tập luyện hằng tuần</label>
+                        <select id="set-activity" class="input-control">
+                            <option value="1.2">Ít vận động (Chỉ làm việc văn phòng, không tập thể dục)</option>
+                            <option value="1.375">Vận động nhẹ (Tập nhẹ nhàng 1 - 3 buổi / tuần)</option>
+                            <option value="1.55">Vận động vừa (Tập luyện tích cực 3 - 5 buổi / tuần)</option>
+                            <option value="1.725">Vận động nhiều (Tập luyện nặng 6 - 7 buổi / tuần)</option>
+                            <option value="1.9">Vận động cực độ (Lao động nặng nhọc, vận động viên chuyên nghiệp)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="set-goal">Mục tiêu cân nặng</label>
+                        <select id="set-goal" class="input-control">
+                            <option value="lose">Giảm cân thâm hụt calo thích nghi chuẩn (-500 kcal)</option>
+                            <option value="lose-fast">Giảm cân thâm hụt calo sâu thắt chặt (-750 kcal)</option>
+                            <option value="maintain">Duy trì cân nặng hiện tại (Cân bằng TDEE)</option>
+                        </select>
+                    </div>
+                     <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                        💾 Lưu và cập nhật mục tiêu Calories hằng ngày
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TẢI CƠ SỞ DỮ LIỆU & LOGIC -->
+    <script src="js/food-db.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

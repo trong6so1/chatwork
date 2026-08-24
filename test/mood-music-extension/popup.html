@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Music</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mood Music</h1>
+            <p>Hòa nhịp cùng tâm trạng của bạn</p>
+        </header>
+
+        <div class="input-group">
+            <label for="mood">Hôm nay bạn thấy thế nào?</label>
+            <select id="mood">
+                <option value="happy">😊 Vui vẻ</option>
+                <option value="sad">😢 Buồn</option>
+                <option value="energetic">🔥 Năng động</option>
+                <option value="relaxed">🍃 Thư giãn</option>
+                <option value="focus">🎯 Tập trung</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="genre">Thể loại nhạc muốn nghe?</label>
+            <input type="text" id="genre" placeholder="Ví dụ: Lo-fi, EDM, Pop...">
+        </div>
+
+        <button id="play-btn">
+            <span>Bắt đầu phát</span>
+            <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M8 5v14l11-7z" fill="currentColor"/>
+            </svg>
+        </button>
+
+        <footer>
+            <p>&copy; 2026 Mood Music Extension</p>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

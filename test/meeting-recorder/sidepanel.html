@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Recorder</title>
+    <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Meeting Recorder</h1>
+            <div id="status-indicator" class="status-dot"></div>
+        </header>
+
+        <main>
+            <div class="controls">
+                <button id="start-btn" class="btn primary">Bắt đầu ghi</button>
+                <button id="stop-btn" class="btn secondary" disabled>Dừng ghi</button>
+                <button id="export-btn" class="btn outline" disabled>Xuất .txt</button>
+            </div>
+
+            <div class="transcript-container">
+                <div id="transcript" class="transcript-box" placeholder="Nội dung sẽ hiển thị ở đây..."></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Sử dụng Web Speech API</p>
+        </footer>
+    </div>
+    <script src="sidepanel.js"></script>
+</body>
+</html>

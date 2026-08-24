@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Copy Data to Excel",
+  "version": "1.0",
+  "description": "Lấy dữ liệu từ form và copy vào clipboard định dạng Excel.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
