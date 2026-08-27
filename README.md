@@ -401,3 +401,228 @@ Hệ thống hiện tại hoàn toàn đáp ứng tốt cho MVP và chạy Local
 2. **Queue (RabbitMQ/BullMQ)**: Tách việc gọi Gemini AI ra khỏi luồng xử lý Webhook trực tiếp. Nhận webhook -> Đẩy vào Queue -> Xử lý ngầm, giúp phản hồi 200 OK cho Chatwork nhanh tuyệt đối.
 3. **Docker**: Đóng gói ứng dụng thành container để chạy ở mọi nơi (VPS/Cloud).
 4. **Monitoring**: Thêm Sentry, Datadog hoặc Prometheus để theo dõi sức khỏe hệ thống.
+
+---
+
+## 14. Conversation History (Lịch sử Hội thoại)
+
+### Tổng quan
+
+Bot có khả năng **duy trì lịch sử hội thoại** giữa các tin nhắn của cùng một Chatwork Room. Điều này cho phép Gemini hiểu context của cuộc trò chuyện thay vì mỗi lần TO Bot đều bắt đầu từ đầu.
+
+```
+Chatwork Room
+     ↓ (room_id)
+Conversation Store
+     ↓ (history theo room_id)
+Gemini (startChat với history)
+     ↓ (response có context)
+Chatwork
+```
+
+---
+
+### Cách hoạt động
+
+#### Conversation Key
+
+Mỗi Chatwork Room có một conversation riêng, được định danh bằng:
+
+```
+conversation_key = room_{room_id}
+```
+
+Ví dụ:
+- Room `12345` → key `room_12345`
+- Room `67890` → key `room_67890`
+
+#### Lifecycle
+
+```
+Room A – Message 1
+   ↓
+Conversation A được TẠO MỚI (action=created)
+   ↓
+Gửi Gemini (không có history cũ)
+   ↓
+Lưu cặp (user, model) vào store
+
+Room A – Message 2
+   ↓
+Conversation A được REUSE (action=reused)
+   ↓
+Gửi Gemini với history từ Message 1
+   ↓
+Lưu cặp (user, model) mới vào store
+```
+
+#### Storage
+
+Lịch sử hội thoại được lưu vào file JSON:
+
+```
+data/conversations.json
+```
+
+**Restart server vẫn giữ được lịch sử** do dùng persistent file storage.
+
+Cấu trúc file:
+```json
+{
+  "room_12345": {
+    "key": "room_12345",
+    "roomId": "12345",
+    "history": [
+      { "role": "user", "parts": [{ "text": "Docker là gì?" }] },
+      { "role": "model", "parts": [{ "text": "Docker là nền tảng..." }] }
+    ],
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:01:00.000Z"
+  }
+}
+```
+
+---
+
+### Cấu hình (.env)
+
+| Biến | Mặc định | Mô tả |
+|------|----------|-------|
+| `MAX_CONVERSATION_MESSAGES` | `20` | Số tin nhắn tối đa đưa vào context Gemini |
+| `CONVERSATION_TTL_MINUTES` | `0` | Thời gian timeout (phút). `0` = không timeout |
+| `DEBUG_GEMINI_CONTEXT` | `false` | Bật debug log context Gemini (không log nội dung) |
+| `CONVERSATION_STORAGE_FILE` | `data/conversations.json` | Đường dẫn file lưu history |
+
+---
+
+### Lệnh /reset
+
+Người dùng có thể xóa lịch sử hội thoại của room hiện tại:
+
+```
+TO Bot: /reset
+```
+
+Bot sẽ phản hồi:
+```
+✅ Đã xoá lịch sử hội thoại cho room này. Cuộc trò chuyện tiếp theo sẽ bắt đầu mới.
+```
+
+**Sau khi /reset**, tin nhắn tiếp theo sẽ tạo conversation mới từ đầu (không có context cũ).
+
+---
+
+### Cách test thủ công
+
+#### Bước 1 – Khởi động bot
+
+```bash
+npm run dev
+```
+
+#### Bước 2 – Gửi tin nhắn đầu tiên
+
+Trong Chatwork Room A:
+```
+TO Bot: Tôi đang học Docker.
+```
+→ Kiểm tra log: `[CONVERSATION] room_id=xxx action=created`
+
+#### Bước 3 – Gửi tin nhắn tiếp theo (context test)
+
+```
+TO Bot: Nó khác Virtual Machine như thế nào?
+```
+→ Bot phải hiểu "Nó" = Docker (dựa vào context trước đó)
+→ Kiểm tra log: `[CONVERSATION] room_id=xxx action=reused history_size=2`
+
+#### Bước 4 – Thêm một tin nhắn nữa
+
+```
+TO Bot: Cho tôi ví dụ thực tế.
+```
+→ Bot phải tiếp tục hiểu context về Docker.
+
+#### Bước 5 – Test Room isolation
+
+Trong Room B:
+```
+TO Bot: Tôi đang học Kubernetes.
+```
+→ Bot KHÔNG được biết về Docker từ Room A.
+
+Sau đó ở Room A:
+```
+TO Bot: Nó có ưu điểm gì?
+```
+→ Bot phải hiểu "Nó" = Docker (không bị ảnh hưởng bởi Room B).
+
+#### Bước 6 – Test /reset
+
+```
+TO Bot: /reset
+```
+→ Bot xác nhận xóa history.
+
+```
+TO Bot: Nó là gì?
+```
+→ Bot KHÔNG hiểu "Nó" là gì (không còn context).
+
+---
+
+### Debug Conversation
+
+#### Debug 1 – Kiểm tra conversation được tạo mới
+
+Tìm log:
+```
+[CONVERSATION] room_id=123 action=created
+```
+
+#### Debug 2 – Kiểm tra conversation được reuse
+
+Tìm log:
+```
+[CONVERSATION] room_id=123 action=reused history_size=4
+```
+
+#### Debug 3 – Kiểm tra conversation đã expire (nếu bật TTL)
+
+Tìm log:
+```
+[CONVERSATION] room_id=123 action=expired — clearing conversation
+```
+
+#### Debug 4 – Kiểm tra Gemini context (ẩn danh)
+
+Bật trong `.env`:
+```env
+DEBUG_GEMINI_CONTEXT=true
+```
+
+Log sẽ xuất hiện:
+```
+[DEBUG] [GEMINI] Sending context for room_id=123, history_size=4
+```
+*Lưu ý: Không log nội dung thực của tin nhắn để bảo vệ dữ liệu người dùng.*
+
+#### Debug 5 – Kiểm tra file storage
+
+```bash
+cat data/conversations.json
+```
+
+Để xem tất cả conversations đang được lưu.
+
+---
+
+### Known limitations
+
+1. **Duplicate protection (in-memory)**: Set xử lý duplicate vẫn là in-memory. Restart server sẽ mất set này → có thể xử lý lại event cũ. Không ảnh hưởng conversation history vì conversation history đã persistent.
+
+2. **Concurrent writes**: File JSON được ghi đồng bộ. Với lưu lượng rất cao, có thể xảy ra race condition. Khuyến nghị dùng SQLite hoặc Redis cho production.
+
+3. **SDK version**: Hệ thống đang dùng `@google/generative-ai@0.2.1`. Phiên bản này không hỗ trợ `systemInstruction` trong `ModelParams`. System prompt được inject vào tin nhắn đầu tiên của mỗi conversation mới.
+
+
